@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transcript Gate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#E9EBE6; --card:#F3F4F0; --ink:#1A1F1C; --ink-soft:#5A625B;
+    --rule:#C3C8BF; --rule-hard:#9AA298;
+    --pass:#2F6B4F; --fail:#A63A2A; --hold:#B07C1E; --navy:#1F3A5F;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+    --cond:'IBM Plex Sans Condensed','IBM Plex Sans',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--paper);color:var(--ink);font-family:var(--sans);
+    font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;
+    background-image:linear-gradient(var(--rule) 1px,transparent 1px);
+    background-size:100% 28px;background-position:0 -1px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px 96px}
+
+  .masthead{padding:40px 0 20px;border-bottom:2px solid var(--ink)}
+  .eyebrow{
+    font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--ink-soft);display:flex;gap:16px;flex-wrap:wrap;
+  }
+  .eyebrow b{color:var(--fail);font-weight:600}
+  h1{font-family:var(--cond);font-weight:600;font-size:clamp(34px,6vw,58px);
+    line-height:.98;letter-spacing:-.015em;margin:10px 0 8px}
+  .standfirst{max-width:62ch;color:var(--ink-soft);margin:0}
+
+  .legend{display:grid;grid-template-columns:repeat(4,1fr);
+    border:1px solid var(--rule-hard);border-top:none;background:var(--card)}
+  .legend div{padding:12px 14px;border-right:1px solid var(--rule)}
+  .legend div:last-child{border-right:none}
+  .legend .g{font-family:var(--mono);font-size:11px;font-weight:600;
+    letter-spacing:.14em;color:var(--navy);display:block;margin-bottom:3px}
+  .legend .d{font-size:12.5px;line-height:1.4;color:var(--ink-soft)}
+
+  .cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);margin-top:34px}
+  .panel{border:1px solid var(--rule-hard);background:var(--card);min-width:0}
+  .panel + .panel{border-left:none}
+  .phead{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.16em;
+    text-transform:uppercase;padding:10px 18px;border-bottom:1px solid var(--rule-hard);
+    background:var(--ink);color:var(--paper);display:flex;justify-content:space-between;gap:12px}
+  .pbody{padding:18px}
+
+  label.f{display:block;font-family:var(--mono);font-size:10.5px;font-weight:600;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 6px}
+  textarea{width:100%;font-family:var(--mono);font-size:13px;color:var(--ink);
+    background:var(--paper);border:1px solid var(--rule-hard);border-radius:0;
+    padding:9px 11px;outline:none;min-height:300px;resize:vertical;line-height:1.5}
+  textarea:focus{border-color:var(--navy);box-shadow:inset 0 0 0 1px var(--navy)}
+  .field{margin-bottom:16px}
+  .hint{font-size:12.5px;color:var(--ink-soft);margin:6px 0 0}
+
+  /* speaker picker */
+  .who{border:1px dashed var(--rule-hard);padding:12px;margin-bottom:16px}
+  .who p{margin:0 0 9px;font-size:13px;color:var(--ink-soft)}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{font-family:var(--mono);font-size:12px;padding:6px 12px;cursor:pointer;
+    border:1px solid var(--rule-hard);background:var(--paper);color:var(--ink);border-radius:0}
+  .chip:hover{border-color:var(--navy)}
+  .chip.on{background:var(--navy);color:var(--card);border-color:var(--navy)}
+  .chip:focus-visible{outline:2px solid var(--fail);outline-offset:2px}
+  .who.warn{border-color:var(--hold);border-style:solid}
+  .who.warn p{color:var(--hold)}
+
+  button.run{width:100%;font-family:var(--mono);font-size:13px;font-weight:600;
+    letter-spacing:.16em;text-transform:uppercase;padding:14px;background:var(--ink);
+    color:var(--paper);border:1px solid var(--ink);border-radius:0;cursor:pointer;transition:background .15s}
+  button.run:hover:not(:disabled){background:var(--navy);border-color:var(--navy)}
+  button.run:disabled{opacity:.4;cursor:not-allowed}
+  button.run:focus-visible,textarea:focus-visible{outline:2px solid var(--fail);outline-offset:2px}
+
+  .stampwrap{display:flex;justify-content:center;padding:28px 0 20px}
+  .stamp{font-family:var(--mono);font-weight:600;font-size:clamp(19px,3.6vw,28px);
+    letter-spacing:.14em;text-transform:uppercase;border:3px solid currentColor;
+    padding:12px 26px;transform:rotate(-1.6deg);text-align:center;animation:press .22s ease-out both}
+  .stamp small{display:block;font-size:10px;letter-spacing:.2em;font-weight:500;opacity:.7;margin-top:4px}
+  .stamp.pass{color:var(--pass)} .stamp.fail{color:var(--fail)} .stamp.hold{color:var(--hold)}
+  @keyframes press{from{opacity:0;transform:rotate(-1.6deg) scale(1.14)}to{opacity:1;transform:rotate(-1.6deg) scale(1)}}
+  .reason{text-align:center;max-width:54ch;margin:0 auto;color:var(--ink-soft);font-size:13.5px;padding:0 18px 4px}
+
+  .sec{border-top:1px solid var(--rule-hard);padding:18px}
+  .sechead{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--ink-soft);margin:0 0 14px;display:flex;align-items:center;gap:10px}
+  .sechead::after{content:"";flex:1;height:1px;background:var(--rule)}
+
+  .subj{margin-bottom:18px;padding-left:14px;border-left:3px solid var(--rule-hard)}
+  .subj.positive{border-left-color:var(--pass)}
+  .subj.negative{border-left-color:var(--fail)}
+  .subj.mixed{border-left-color:var(--hold)}
+  .subj h3{font-family:var(--cond);font-size:17px;font-weight:600;margin:0 0 1px;text-transform:capitalize}
+  .tag{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--ink-soft)}
+  .subj ul{margin:7px 0 0;padding-left:18px}
+  .subj li{margin-bottom:5px;font-size:14px}
+
+  .ev{border:1px solid var(--rule);background:var(--paper);margin-bottom:10px}
+  .evq{padding:11px 13px;font-family:var(--mono);font-size:12.5px;line-height:1.5}
+  .evq b{color:var(--navy);font-weight:600}
+  .ev.dead .evq{color:var(--ink-soft)}
+  .gates{display:grid;grid-template-columns:repeat(4,1fr) auto;border-top:1px solid var(--rule)}
+  .cell{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.1em;
+    text-align:center;padding:7px 4px;border-right:1px solid var(--rule);animation:cellin .18s ease-out both}
+  @keyframes cellin{from{opacity:0}to{opacity:1}}
+  .cell.y{background:var(--pass);color:var(--card)}
+  .cell.n{background:var(--fail);color:var(--card)}
+  .cell.mute{color:var(--rule-hard)}
+  .verdict{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.12em;
+    padding:7px 13px;text-transform:uppercase;white-space:nowrap}
+  .verdict.y{color:var(--pass)} .verdict.n{color:var(--fail)}
+  .evnote{padding:0 13px 10px;font-size:12px;color:var(--ink-soft)}
+
+  .empty{padding:60px 24px;text-align:center;color:var(--ink-soft);font-family:var(--mono);
+    font-size:12px;letter-spacing:.12em;text-transform:uppercase;line-height:1.9}
+  .err{margin:18px;padding:12px 14px;border:1px solid var(--fail);border-left-width:4px;
+    color:var(--fail);font-size:13.5px;background:var(--card)}
+  .err b{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;
+    text-transform:uppercase;margin-bottom:3px}
+
+  /* word lists */
+  details.lists{margin-top:34px;border:1px solid var(--rule-hard);background:var(--card)}
+  details.lists summary{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.16em;
+    text-transform:uppercase;padding:12px 18px;cursor:pointer;color:var(--ink)}
+  details.lists summary:focus-visible{outline:2px solid var(--fail);outline-offset:-2px}
+  .lgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;padding:0 18px 18px}
+  .lgrid textarea{min-height:110px;font-size:12px}
+  .lgrid p{margin:5px 0 0;font-size:12px;color:var(--ink-soft)}
+  .lfoot{padding:0 18px 18px;display:flex;gap:10px;flex-wrap:wrap}
+  .lfoot button{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    padding:9px 16px;border:1px solid var(--ink);background:var(--paper);color:var(--ink);cursor:pointer}
+  .lfoot button:hover{background:var(--ink);color:var(--paper)}
+
+  footer{margin-top:34px;padding-top:14px;border-top:1px solid var(--rule-hard);
+    font-family:var(--mono);font-size:11px;color:var(--ink-soft);
+    display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+
+  @media (max-width:900px){
+    .cols{grid-template-columns:1fr}
+    .panel + .panel{border-left:1px solid var(--rule-hard);border-top:none}
+    .legend{grid-template-columns:1fr 1fr}
+    .legend div{border-bottom:1px solid var(--rule)}
+    .lgrid{grid-template-columns:1fr}
+    textarea{min-height:200px}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">
+      <span>Transcript Gate</span><span>Four-gate test</span>
+      <span><b>Runs in your browser. No key, no cost.</b></span>
+    </div>
+    <h1>Paste a call. Find out if it&nbsp;actually contains feedback.</h1>
+    <p class="standfirst">Tell it who the customer is, and every line they spoke gets tested against four gates. A line has to clear all four to count. You see which gate killed the ones that didn&rsquo;t, so you can check its work.</p>
+  </header>
+
+  <div class="legend">
+    <div><span class="g">GATE A &mdash; SPEAKER</span><span class="d">The customer said it. Anything your rep said is out.</span></div>
+    <div><span class="g">GATE B &mdash; TARGET</span><span class="d">It names a product. Not a person, a deadline, or a purchase order.</span></div>
+    <div><span class="g">GATE C &mdash; EXPERIENCE</span><span class="d">They&rsquo;ve already used it. Future orders and plans are out.</span></div>
+    <div><span class="g">GATE D &mdash; ASSESSMENT</span><span class="d">They say how it performed. A request on its own doesn&rsquo;t count.</span></div>
+  </div>
+
+  <div class="cols">
+    <section class="panel">
+      <div class="phead"><span>Input</span><span id="charcount">0 characters</span></div>
+      <div class="pbody">
+        <div class="field">
+          <label class="f" for="transcript">Transcript</label>
+          <textarea id="transcript" placeholder="Paste the full transcript, speaker names included." spellcheck="false"></textarea>
+        </div>
+
+        <div class="who" id="who">
+          <p id="whotext">Paste a transcript and the speakers will appear here.</p>
+          <div class="chips" id="chips"></div>
+        </div>
+
+        <button class="run" id="run" disabled>Run the gate</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="phead"><span>Result</span><span id="status">Idle</span></div>
+      <div id="out"><div class="empty">No transcript checked yet</div></div>
+    </section>
+  </div>
+
+  <details class="lists">
+    <summary>Word lists &mdash; tune these as things slip through</summary>
+    <div class="lgrid">
+      <div>
+        <label class="f" for="lProducts">Products</label>
+        <textarea id="lProducts" spellcheck="false"></textarea>
+        <p>Things a customer can have an opinion about. Gate B looks for these.</p>
+      </div>
+      <div>
+        <label class="f" for="lAssess">Assessment words</label>
+        <textarea id="lAssess" spellcheck="false"></textarea>
+        <p>Words that say how something performed. Gate D looks for these.</p>
+      </div>
+      <div>
+        <label class="f" for="lPast">Experience words</label>
+        <textarea id="lPast" spellcheck="false"></textarea>
+        <p>Signs they already used it. Gate C needs one of these.</p>
+      </div>
+      <div>
+        <label class="f" for="lFuture">Future words</label>
+        <textarea id="lFuture" spellcheck="false"></textarea>
+        <p>Signs it hasn&rsquo;t happened yet. Any of these kills Gate C.</p>
+      </div>
+      <div>
+        <label class="f" for="lExclude">Exclusions</label>
+        <textarea id="lExclude" spellcheck="false"></textarea>
+        <p>Phrases that throw a line out before the gates run. Add to this one most.</p>
+      </div>
+      <div>
+        <label class="f" for="lNeg">Negative words</label>
+        <textarea id="lNeg" spellcheck="false"></textarea>
+        <p>Used only to label a group positive, negative, or mixed.</p>
+      </div>
+    </div>
+    <div class="lfoot">
+      <button id="saveLists">Save lists</button>
+      <button id="resetLists">Reset to defaults</button>
+      <span class="hint" id="listmsg" style="align-self:center"></span>
+    </div>
+  </details>
+
+  <footer><span>Transcript Gate</span><span>Nothing leaves your browser</span></footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const store = {
+  get(k){ try{ return localStorage.getItem(k); }catch{ return null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch{} },
+  del(k){ try{ localStorage.removeItem(k); }catch{} }
+};
+
+/* ---------- default word lists ---------- */
+const DEFAULTS = {
+  lProducts:"case, cases, cover, covers, sleeve, headphone, headphones, earbud, earbuds, chromebook, chromebooks, laptop, laptops, device, devices, unit, units, screen, screens, hinge, bezel, keyboard, port, jack, usb, charger, battery, cart, lenovo, hp, dell, acer, asus, apple, samsung, product, model, batch, fleet",
+  lAssess:"good, great, bad, terrible, poor, excellent, fine, solid, works, worked, working, holding up, held up, broke, broken, breaking, breakage, cracked, snapped, fail, failed, failing, issue, issues, problem, problems, defect, faulty, durable, sturdy, flimsy, cheap, expensive, pricey, easy, hard to, difficult, tough, love, loved, like, liked, likes, hate, happy, satisfied, disappointed, reliable, popping out, popped out, falling off, fell off, fall off, coming off, reduced, improved, better, worse, performing, performs, lasted, lasting, no problem with, worth it, waste",
+  lPast:"had, have, has, we've, they've, i've, was, were, is, are, been, kept, keeps, got, bought, purchased, used, using, received, so far, in the past, back in, last time, a couple of years, still, currently, these, those, we run, we've had",
+  lFuture:"will, we'll, i'll, would, going to, gonna, plan to, planning, hoping, hopefully, if we, once we, when we get, next week, next month, upcoming, can we, could we, should we, let's, about to, expect to",
+  lExclude:"purchase order, p.o., the po, minimum order, moq, bid doc, the bid, expedite, tracking number, shipping, shipped, ship it, delivery date, deliver, deadline, invoice, net 30, send you a quote, get a quote, will be upset, make her upset, i'm sorry, so sorry, apolog, disconnect, dropped the call, office phone, thank you so much, no problem at all, have a great day",
+  lNeg:"bad, terrible, poor, broke, broken, breaking, breakage, cracked, snapped, fail, failed, failing, issue, issues, problem, problems, defect, faulty, flimsy, expensive, pricey, difficult, hate, disappointed, worse, popping out, popped out, falling off, fell off, fall off, coming off, waste"
+};
+const LKEYS = Object.keys(DEFAULTS);
+function loadLists(){
+  LKEYS.forEach(k => { $(k).value = store.get('tg_'+k) ?? DEFAULTS[k]; });
+}
+function listOf(id){
+  return $(id).value.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+}
+loadLists();
+$('saveLists').addEventListener('click', () => {
+  LKEYS.forEach(k => store.set('tg_'+k, $(k).value));
+  $('listmsg').textContent = 'Saved. Run the gate again to use them.';
+  setTimeout(() => $('listmsg').textContent = '', 3000);
+});
+$('resetLists').addEventListener('click', () => {
+  LKEYS.forEach(k => store.del('tg_'+k));
+  loadLists();
+  $('listmsg').textContent = 'Back to defaults.';
+  setTimeout(() => $('listmsg').textContent = '', 3000);
+});
+
+/* ---------- parse transcript into speaker turns ---------- */
+function parseTurns(raw){
+  const text = raw.replace(/\r/g,'');
+  const turns = [];
+
+  // Style 1:  0:00 | Ben \n what they said
+  const tsRe = /^\s*\d{1,2}:\d{2}\s*\|\s*([^\n]{1,40})\n([\s\S]*?)(?=^\s*\d{1,2}:\d{2}\s*\||\s*$)/gm;
+  let m;
+  while ((m = tsRe.exec(text)) !== null){
+    const body = m[2].trim();
+    if (body) turns.push({ speaker: m[1].trim(), text: body });
+  }
+  if (turns.length >= 3) return turns;
+
+  // Style 2:  Ben: "what they said"   Karen: "reply"
+  turns.length = 0;
+  const nameRe = /([A-Z][A-Za-z'’.\-]{1,18}(?:\s[A-Z][A-Za-z'’.\-]{1,18})?)\s*:\s*/g;
+  const marks = [];
+  while ((m = nameRe.exec(text)) !== null){
+    marks.push({ name: m[1].trim(), start: m.index, end: m.index + m[0].length });
+  }
+  for (let i = 0; i < marks.length; i++){
+    const body = text.slice(marks[i].end, i + 1 < marks.length ? marks[i+1].start : text.length)
+                     .replace(/[“”"]/g,'').trim();
+    if (body) turns.push({ speaker: marks[i].name, text: body });
+  }
+  return turns;
+}
+
+function speakerCounts(turns){
+  const c = {};
+  turns.forEach(t => { c[t.speaker] = (c[t.speaker] || 0) + t.text.length; });
+  return Object.entries(c).sort((a,b) => b[1] - a[1]);
+}
+
+function sentences(t){
+  return t.replace(/\s+/g,' ')
+          .split(/(?<=[.!?])\s+/)
+          .map(s => s.trim())
+          .filter(s => s.length > 12);
+}
+
+/* ---------- state ---------- */
+let TURNS = [], CUSTOMER = null;
+const txtEl = $('transcript');
+
+function refreshSpeakers(){
+  TURNS = parseTurns(txtEl.value);
+  const counts = speakerCounts(TURNS);
+  const chips = $('chips'), who = $('who');
+  chips.innerHTML = '';
+  who.classList.remove('warn');
+
+  if (!counts.length){
+    $('whotext').textContent = txtEl.value.trim()
+      ? 'No speaker names found. Each line needs a name, like "Ben:" or "0:00 | Ben".'
+      : 'Paste a transcript and the speakers will appear here.';
+    if (txtEl.value.trim()) who.classList.add('warn');
+    CUSTOMER = null; $('run').disabled = true;
+    return;
+  }
+
+  $('whotext').textContent = 'Which one is the customer? Everything the other people said is thrown out at Gate A.';
+  if (!counts.some(c => c[0] === CUSTOMER)) CUSTOMER = null;
+
+  counts.forEach(([name]) => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (name === CUSTOMER ? ' on' : '');
+    b.textContent = name;
+    b.addEventListener('click', () => { CUSTOMER = name; refreshSpeakers(); });
+    chips.appendChild(b);
+  });
+  $('run').disabled = !CUSTOMER;
+}
+
+txtEl.addEventListener('input', () => {
+  $('charcount').textContent = txtEl.value.length.toLocaleString() + ' characters';
+  refreshSpeakers();
+});
+
+/* ---------- the gate ---------- */
+function hit(low, terms){ return terms.find(t => low.includes(t)) || null; }
+
+function runGate(){
+  const P = listOf('lProducts'), A = listOf('lAssess'), C = listOf('lPast'),
+        F = listOf('lFuture'), X = listOf('lExclude'), N = listOf('lNeg');
+  const PRON = ['they','them','their','these','those','it ',"it's",'its ','that one'];
+
+  const evidence = [];
+  let recentProduct = null, sinceProduct = 99;
+
+  TURNS.forEach(turn => {
+    const isCustomer = turn.speaker === CUSTOMER;
+    sentences(turn.text).forEach(s => {
+      const low = ' ' + s.toLowerCase() + ' ';
+
+      const kill = hit(low, X);
+      if (kill) return; // excluded outright, never shown
+
+      let prod = hit(low, P);
+      if (prod){ recentProduct = prod; sinceProduct = 0; }
+      else sinceProduct++;
+
+      const pronoun = hit(low, PRON);
+      const inherited = !prod && pronoun && recentProduct && sinceProduct <= 4;
+      if (inherited) prod = recentProduct;
+
+      const assess = hit(low, A);
+      const past = hit(low, C);
+      const future = hit(low, F);
+
+      const gA = isCustomer;
+      const gB = !!prod;
+      const gC = !!past && !future;
+      const gD = !!assess;
+
+      // only surface lines with at least some evaluative signal
+      if (!gD && !gB) return;
+
+      let note = '';
+      if (!gA) note = 'Said by ' + turn.speaker + ', not the customer.';
+      else if (!gB) note = 'No product named, so there is nothing being assessed.';
+      else if (!gC) note = future ? 'Talks about something that has not happened yet ("' + future.trim() + '").'
+                                  : 'No sign they have actually used it.';
+      else if (!gD) note = 'Names a product but never says how it performed.';
+
+      evidence.push({ quote:s, speaker:turn.speaker, A:gA, B:gB, C:gC, D:gD,
+                      note, product:prod, inherited, negative: !!hit(low, N) });
+    });
+  });
+
+  const passed = evidence.filter(e => e.A && e.B && e.C && e.D);
+  const near = evidence.filter(e => !passed.includes(e) &&
+                  [e.A,e.B,e.C,e.D].filter(Boolean).length === 3);
+
+  let cls, reason;
+  if (passed.length){
+    cls = 'FEEDBACK';
+    reason = passed.length + (passed.length === 1 ? ' line cleared' : ' lines cleared') + ' all four gates.';
+  } else if (near.length){
+    cls = 'REVIEW';
+    reason = near.length + (near.length === 1 ? ' line got' : ' lines got') + ' through three gates but not the fourth. Worth a human look.';
+  } else {
+    cls = 'NO_FEEDBACK';
+    reason = evidence.length
+      ? 'Nothing the customer said cleared the gates.'
+      : 'No line in this call came close to being feedback.';
+  }
+
+  // group passing lines by product
+  const groups = [];
+  passed.forEach(e => {
+    let g = groups.find(x => x.subject === e.product);
+    if (!g){ g = { subject:e.product, points:[], neg:0, tot:0 }; groups.push(g); }
+    g.points.push(e.quote); g.tot++; if (e.negative) g.neg++;
+  });
+  groups.forEach(g => {
+    g.stance = g.neg === 0 ? 'positive' : (g.neg === g.tot ? 'negative' : 'mixed');
+  });
+
+  render({ cls, reason, groups, evidence });
+}
+
+function render(r){
+  const map = {
+    FEEDBACK:   ['pass','Feedback','Send to hub'],
+    REVIEW:     ['hold','Check by hand','Close, but not clear'],
+    NO_FEEDBACK:['fail','No feedback','Do not route']
+  }[r.cls];
+
+  let h = `<div class="stampwrap"><div class="stamp ${map[0]}">${map[1]}<small>${map[2]}</small></div></div>`;
+  h += `<p class="reason">${esc(r.reason)}</p>`;
+
+  if (r.groups.length){
+    h += `<div class="sec"><h2 class="sechead">Summary</h2>`;
+    r.groups.forEach(g => {
+      h += `<div class="subj ${g.stance}"><h3>${esc(g.subject)}</h3><span class="tag">${g.stance}</span><ul>`;
+      g.points.forEach(p => h += `<li>${esc(p)}</li>`);
+      h += `</ul></div>`;
+    });
+    h += `</div>`;
+  }
+
+  if (r.evidence.length){
+    h += `<div class="sec"><h2 class="sechead">Evidence log &middot; ${r.evidence.length} checked</h2>`;
+    r.evidence.forEach((e,i) => {
+      const g = [e.A,e.B,e.C,e.D];
+      const firstFail = g.indexOf(false);
+      const ok = firstFail === -1;
+      h += `<div class="ev${ok?'':' dead'}">
+        <div class="evq"><b>${esc(e.speaker)}</b> ${esc(e.quote)}</div><div class="gates">`;
+      ['A','B','C','D'].forEach((k,j) => {
+        const after = firstFail !== -1 && j > firstFail;
+        h += `<div class="cell ${after?'mute':(g[j]?'y':'n')}" style="animation-delay:${i*35+j*50}ms">${k}</div>`;
+      });
+      h += `<div class="verdict ${ok?'y':'n'}">${ok?'Pass':'Fail '+['A','B','C','D'][firstFail]}</div></div>`;
+      if (!ok && e.note) h += `<p class="evnote">${esc(e.note)}</p>`;
+      if (ok && e.inherited) h += `<p class="evnote">Read as being about the ${esc(e.product)} from the line before.</p>`;
+      h += `</div>`;
+    });
+    h += `</div>`;
+  } else {
+    h += `<div class="sec"><p class="hint" style="margin:0">Nothing in this call had enough signal to be worth testing.</p></div>`;
+  }
+
+  $('out').innerHTML = h;
+  $('status').textContent = r.cls === 'FEEDBACK' ? 'Feedback' : (r.cls === 'REVIEW' ? 'Review' : 'Clear');
+}
+
+$('run').addEventListener('click', runGate);
+txtEl.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && CUSTOMER) runGate();
+});
+</script>
+</body>
+</html>
